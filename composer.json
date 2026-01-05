@@ -1,0 +1,45 @@
+{
+  "name": "seiger/sapi",
+  "license": "GPL-3.0",
+  "type": "EvolutionCMS-Module",
+  "description": "API tools package for Evolution CMS.",
+  "keywords": [
+    "evocms",
+    "evolution-cms",
+    "e-commerce",
+    "api",
+    "shop",
+    "catalog",
+    "api-tools"
+  ],
+  "authors": [
+    {
+      "name": "Serhii Korneliuk",
+      "email": "info@seigerit.com"
+    }
+  ],
+  "require": {
+    "php": "^8.4",
+    "evolutioncms/evolution": "^3.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Seiger\\sApi\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Seiger\\sApi\\sApiServiceProvider"
+      ],
+      "aliases": {
+        "sCommerce": "Seiger\\sApi\\Facades\\sApi"
+      }
+    }
+  },
+  "scripts": {
+    "post-autoload-dump": [
+      "@php artisan cache:clear"
+    ]
+  }
+}
