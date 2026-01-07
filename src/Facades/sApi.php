@@ -1,4 +1,4 @@
-<?php namespace Seiger\sApi;
+<?php namespace Seiger\sApi\Facades;
 
 use Illuminate\Support\Facades\Facade;
 

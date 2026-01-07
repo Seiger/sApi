@@ -20,7 +20,8 @@
   ],
   "require": {
     "php": "^8.4",
-    "evolutioncms/evolution": "^3.5"
+    "evolutioncms/evolution": "^3.5",
+    "firebase/php-jwt": "^6.10"
   },
   "autoload": {
     "psr-4": {
@@ -33,7 +34,7 @@
         "Seiger\\sApi\\sApiServiceProvider"
       ],
       "aliases": {
-        "sCommerce": "Seiger\\sApi\\Facades\\sApi"
+        "sApi": "Seiger\\sApi\\Facades\\sApi"
       }
     }
   },
