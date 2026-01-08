@@ -463,7 +463,7 @@ class MgrController
             'path' => (string) $path,
             'status' => (int) $status,
             'duration' => is_numeric($duration) ? (int) $duration : null,
-            'level' => ucfirst(strtolower($context['level'] ?? $level)),
+            'level' => $context['level'] ?? $level,
             'request_id' => (string) ($requestId ?? ''),
             'ip' => $context['ip'] ?? null,
             'ua' => $context['ua'] ?? null,

@@ -98,14 +98,91 @@
                             <tr class="text-sm darkness:text-slate-100">
                                 <td class="py-3 font-mono text-xs text-slate-500 darkness:text-slate-400">{{$request['created_at']}}</td>
                                 <td class="py-3">
-                                    <span class="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium darkness:bg-blue-900 darkness:text-blue-300">
-                                        {{$request['method']}}
-                                    </span>
+                                    @switch($request['method'])
+                                        @case('GET')
+                                            <span class="px-2 py-1 rounded text-green-600 bg-green-50 text-xs font-medium">
+                                                {{$request['method']}}
+                                            </span>
+                                            @break
+                                        @case('POST')
+                                            <span class="px-2 py-1 rounded text-amber-600 bg-amber-50 text-xs font-medium">
+                                                {{$request['method']}}
+                                            </span>
+                                            @break
+                                        @case('PUT')
+                                            <span class="px-2 py-1 rounded text-blue-600 bg-blue-50 text-xs font-medium">
+                                                {{$request['method']}}
+                                            </span>
+                                            @break
+                                        @case('PATCH')
+                                            <span class="px-2 py-1 rounded text-violet-600 bg-violet-50 text-xs font-medium">
+                                                {{$request['method']}}
+                                            </span>
+                                            @break
+                                        @case('DELETE')
+                                            <span class="px-2 py-1 rounded text-red-600 bg-red-50 text-xs font-medium">
+                                                {{$request['method']}}
+                                            </span>
+                                            @break
+                                        @case('HEAD')
+                                            <span class="px-2 py-1 rounded text-teal-600 bg-teal-50 text-xs font-medium">
+                                                {{$request['method']}}
+                                            </span>
+                                            @break
+                                        @default
+                                            <span class="px-2 py-1 rounded text-pink-600 bg-pink-50 text-xs font-medium">
+                                                {{$request['method']}}
+                                            </span>
+                                            @break
+                                    @endswitch
                                 </td>
                                 <td class="py-3">{{$request['path']}}</td>
                                 <td class="py-3">{{$request['status']}}</td>
                                 <td class="py-3">{{$request['duration']}} ms</td>
-                                <td class="py-3">{{$request['level']}}</td>
+                                <td class="py-3">
+                                    @switch($request['level'])
+                                        @case('DEBUG')
+                                            <span class="px-2 py-1 rounded text-slate-600 bg-slate-100 text-xs font-medium">
+                                                {{ucfirst(strtolower($request['level']))}}
+                                            </span>
+                                            @break
+                                        @case('NOTICE')
+                                            <span class="px-2 py-1 rounded text-indigo-600 bg-indigo-50 text-xs font-medium">
+                                                {{ucfirst(strtolower($request['level']))}}
+                                            </span>
+                                            @break
+                                        @case('WARNING')
+                                            <span class="px-2 py-1 rounded text-amber-600 bg-amber-50 text-xs font-medium">
+                                                {{ucfirst(strtolower($request['level']))}}
+                                            </span>
+                                            @break
+                                        @case('ERROR')
+                                            <span class="px-2 py-1 rounded text-red-600 bg-red-50 text-xs font-medium">
+                                                {{$request['level']}}
+                                            </span>
+                                            @break
+                                        @case('CRITICAL')
+                                            <span class="px-2 py-1 rounded text-rose-700 bg-rose-50 text-xs font-medium">
+                                                {{ucfirst(strtolower($request['level']))}}
+                                            </span>
+                                            @break
+                                        @case('ALERT')
+                                            <span class="px-2 py-1 rounded text-fuchsia-700 bg-fuchsia-50 text-xs font-medium">
+                                                {{$request['level']}}
+                                            </span>
+                                            @break
+                                        @case('EMERGENCY')
+                                            <span class="px-2 py-1 rounded text-violet-700 bg-violet-50 text-xs font-medium">
+                                                {{$request['level']}}
+                                            </span>
+                                            @break
+                                        @default
+                                            <span class="px-2 py-1 rounded text-blue-600 bg-blue-50 text-xs font-medium">
+                                                {{ucfirst(strtolower($request['level']))}}
+                                            </span>
+                                            @break
+                                    @endswitch
+                                </td>
                                 {{--<td class="py-3 text-right">
                                     <a href="{{route('stask.task.show', $task->id)}}" class="text-blue-600 hover:underline text-xs darkness:text-sky-400">
                                         @lang('sApi::global.details')
