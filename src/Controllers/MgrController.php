@@ -2,7 +2,6 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Seiger\sApi\sApi;
 
 class MgrController
 {
@@ -57,8 +56,8 @@ class MgrController
         ];
 
         $normalized = $this->normalizeConfiguredRoutes(
-            (array)sApi::config('routes', []),
-            (string)sApi::config('base_path', 'api')
+            $this->getConfiguredRoutes(),
+            trim((string)env('SAPI_BASE_PATH', 'api'), '/')
         );
 
         $routes = $normalized['routes'];
@@ -96,6 +95,24 @@ class MgrController
     private function layout(array $data): array
     {
         return array_merge($data, ['activeRoute' => (string)(app('router')->currentRouteName() ?? '')]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getConfiguredRoutes(): array
+    {
+        $version = trim((string)env('SAPI_VERSION', ''), '/');
+
+        return [
+            [
+                'method' => 'post',
+                'path' => 'token',
+                'prefix' => $version,
+                'action' => [\Seiger\sApi\Controllers\TokenController::class, 'token'],
+                'name' => 'token',
+            ],
+        ];
     }
 
     private function countRequestsToday(): int

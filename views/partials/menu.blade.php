@@ -5,15 +5,15 @@
     </div>
     <nav class="s-nav-menu">
         <a href="{{route('sApi.dashboard')}}" @class(['s-nav-menu-item', 's-nav-menu-item--active' => 'sApi.dashboard' == $activeRoute])>
-            @svg('tabler-layout-dashboard', 'w-5 h-5')
+            @svg('tabler-layout-dashboard', 'w-6 h-6')
             <span x-show="open">@lang('sApi::global.dashboard')</span>
         </a>
         <a href="{{route('sApi.logs')}}" @class(['s-nav-menu-item', 's-nav-menu-item--active' => 'sApi.logs' == $activeRoute])>
-            @svg('tabler-activity-heartbeat', 'w-5 h-5')
+            @svg('tabler-activity-heartbeat', 'w-6 h-6')
             <span x-show="open">@lang('sApi::global.logs/timeline')</span>
         </a>
         <a href="{{route('sApi.routes')}}" @class(['s-nav-menu-item', 's-nav-menu-item--active' => 'sApi.routes' == $activeRoute])>
-            @svg('tabler-route', 'w-5 h-5')
+            @svg('tabler-route', 'w-6 h-6')
             <span x-show="open">@lang('sApi::global.routes')</span>
         </a>
     </nav>

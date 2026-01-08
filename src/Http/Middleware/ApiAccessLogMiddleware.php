@@ -8,7 +8,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Seiger\sApi\Http\ApiResponse;
 use Seiger\sApi\Logging\RequestContext;
-use Seiger\sApi\sApi;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApiAccessLogMiddleware
@@ -25,8 +24,24 @@ class ApiAccessLogMiddleware
             $requestId = substr($requestId, 0, 128);
         }
 
-        $logging = sApi::config('logging', []);
-        $logging = is_array($logging) ? $logging : [];
+        $excludePathsRaw = (string)env('SAPI_LOG_EXCLUDE_PATHS', '');
+        $excludePaths = $excludePathsRaw !== '' ? array_values(array_filter(array_map('trim', explode(',', $excludePathsRaw)))) : [];
+
+        $redactKeysRaw = (string)env('SAPI_REDACT_BODY_KEYS', 'password,token,refresh_token,jwt,secret');
+        $redactKeys = array_values(array_filter(array_map('trim', explode(',', $redactKeysRaw))));
+
+        $logging = [
+            'enabled' => (bool)(int)env('SAPI_LOGGING_ENABLED', 1),
+            'access' => [
+                'enabled' => (bool)(int)env('SAPI_LOG_ACCESS_ENABLED', 1),
+                'exclude_paths' => $excludePaths,
+                'log_body_on_error' => (bool)(int)env('SAPI_LOG_BODY_ON_ERROR', 1),
+                'max_body_bytes' => (int)env('SAPI_LOG_MAX_BODY_BYTES', 4096),
+            ],
+            'redact' => [
+                'body_keys' => $redactKeys,
+            ],
+        ];
 
         $routeAction = $this->resolveRouteAction($request);
         [$sub, $scopes] = $this->resolveJwtClaims($request);
@@ -165,7 +180,7 @@ class ApiAccessLogMiddleware
             return [null, null];
         }
 
-        $secret = (string) sApi::config('jwt_secret', '');
+        $secret = (string)env('SAPI_JWT_SECRET', '');
         if ($secret === '') {
             return [null, null];
         }

@@ -6,7 +6,6 @@ use Seiger\sApi\Auth\UserProvider;
 use Seiger\sApi\Http\ApiResponse;
 use Seiger\sApi\Logging\AuditLogger;
 use Seiger\sApi\Logging\RequestContext;
-use Seiger\sApi\sApi;
 
 class TokenController
 {
@@ -31,7 +30,16 @@ class TokenController
             return ApiResponse::error('Username are required.', 422, (object)[]);
         }
 
-        $password = trim($request->input('password', 'password'));
+        $password = (string)$request->input('password', '');
+        if ($password === '' && is_array($decoded) && isset($decoded['password'])) {
+            $password = (string)$decoded['password'];
+        }
+        $password = trim($password);
+
+        if ($password === '') {
+            $password = 'password';
+        }
+
         $provider = new UserProvider;
         $user = $provider->findByUsername($username);
         if (!$user || (int)$user->id < 1) {
@@ -42,8 +50,15 @@ class TokenController
             return ApiResponse::error('Invalid credentials.', 401, (object)[]);
         }
 
-        $allowedUserRoles = sApi::config('allowed_user_roles', []);
-        if (!is_array($allowedUserRoles) || $allowedUserRoles === [] || !in_array($user->attributes->role, $allowedUserRoles, true)) {
+        $rolesRaw = (string)env('SAPI_ALLOWED_USER_ROLES', '4');
+        $roles = array_values(array_filter(array_map('trim', explode(',', $rolesRaw))));
+        $roles = array_values(array_filter(array_map('intval', $roles), static fn(int $v) => $v > 0));
+        if ($roles === []) {
+            $roles = [4];
+        }
+
+        $role = (int)($user->attributes->role ?? 0);
+        if (!in_array($role, $roles, true)) {
             return ApiResponse::error('Access denied.', 403, (object)[]);
         }
 

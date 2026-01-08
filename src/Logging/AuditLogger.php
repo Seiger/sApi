@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
-use Seiger\sApi\sApi;
 
 final class AuditLogger
 {
@@ -13,20 +12,16 @@ final class AuditLogger
             return;
         }
 
-        $logging = sApi::config('logging', []);
-        $logging = is_array($logging) ? $logging : [];
-        if (!(bool)($logging['enabled'] ?? true)) {
+        if (!(bool)(int)env('SAPI_LOGGING_ENABLED', 1)) {
             return;
         }
 
-        $audit = $logging['audit'] ?? [];
-        $audit = is_array($audit) ? $audit : [];
-        if (!(bool)($audit['enabled'] ?? true)) {
+        if (!(bool)(int)env('SAPI_LOG_AUDIT_ENABLED', 1)) {
             return;
         }
 
-        $exclude = $audit['exclude_events'] ?? [];
-        $exclude = is_array($exclude) ? $exclude : [];
+        $excludeRaw = (string)env('SAPI_AUDIT_EXCLUDE_EVENTS', '');
+        $exclude = $excludeRaw !== '' ? array_values(array_filter(array_map('trim', explode(',', $excludeRaw)))) : [];
         foreach ($exclude as $pattern) {
             $pattern = trim((string)$pattern);
             if ($pattern !== '' && $this->eventMatches($event, $pattern)) {
@@ -34,10 +29,11 @@ final class AuditLogger
             }
         }
 
-        $redactKeys = (array)($logging['redact']['body_keys'] ?? []);
+        $redactKeysRaw = (string)env('SAPI_REDACT_BODY_KEYS', 'password,token,refresh_token,jwt,secret');
+        $redactKeys = array_values(array_filter(array_map('trim', explode(',', $redactKeysRaw))));
         $context = $this->redactKeys($context, $redactKeys);
 
-        $maxBytes = (int)($audit['max_context_bytes'] ?? 8192);
+        $maxBytes = (int)env('SAPI_AUDIT_MAX_CONTEXT_BYTES', 8192);
         if ($maxBytes < 1) {
             $maxBytes = 8192;
         }

@@ -1,7 +1,6 @@
 <?php namespace Seiger\sApi\Auth;
 
 use Firebase\JWT\JWT;
-use Seiger\sApi\sApi;
 
 /**
  * Class JwtService
@@ -44,7 +43,7 @@ class JwtService
             $payload['iat'] = $now;
         }
 
-        $ttl = $ttl ?? (int) sApi::config('jwt_ttl', 3600);
+        $ttl = $ttl ?? (int)env('SAPI_JWT_TTL', 3600);
         if ($ttl < 1) {
             $ttl = 3600;
         }
@@ -53,20 +52,18 @@ class JwtService
             $payload['exp'] = (int) $payload['iat'] + $ttl;
         }
 
-        $payload['scopes'] = $this->normalizeScopes(
-            $payload['scopes'] ?? sApi::config('jwt_scopes', ['*'])
-        );
+        $payload['scopes'] = $this->normalizeScopes($payload['scopes'] ?? env('SAPI_JWT_SCOPES', '*'));
 
         if (!isset($payload['iss'])) {
-            $iss = (string) sApi::config('jwt_iss', '');
+            $iss = (string)env('SAPI_JWT_ISS', '');
             if ($iss !== '') {
                 $payload['iss'] = $iss;
             }
         }
 
-        $secret = (string) sApi::config('jwt_secret', '');
+        $secret = (string)env('SAPI_JWT_SECRET', '');
         if ($secret === '') {
-            throw new \RuntimeException('sApi JWT secret is not configured.');
+            throw new \RuntimeException('sApi JWT secret is not configured (SAPI_JWT_SECRET).');
         }
 
         if (class_exists(JWT::class)) {

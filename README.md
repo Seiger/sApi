@@ -41,6 +41,34 @@ composer require seiger/sapi
 
 ---
 
+## Environment Variables
+
+Recommended location: `core/custom/.env` (EvolutionCMS loads it in `core/bootstrap.php`).
+
+| Variable |                                   Default | Description |
+|---|------------------------------------------:|---|
+| `SAPI_BASE_PATH` |                                     `api` | Base prefix for all sApi routes (e.g. `rest` → `/rest/token`). |
+| `SAPI_VERSION` |                                      `v1` | Optional API version prefix (e.g. `v1` → `/rest/v1/token`). Leave empty to use unversioned routes. |
+| `SAPI_JWT_SECRET` |                                 _(empty)_ | HS256 secret used to sign/verify JWTs. **Required** to issue tokens. |
+| `SAPI_JWT_TTL` |                                    `3600` | Token TTL in seconds. |
+| `SAPI_JWT_SCOPES` |                                       `*` | Default token scopes (comma-separated). |
+| `SAPI_JWT_ISS` |                                 _(empty)_ | Optional `iss` claim. |
+| `SAPI_ALLOWED_USER_ROLES` |                                       `4` | Allowed Evo manager roles for `/token` (comma-separated). |
+| `SAPI_LOGGING_ENABLED` |                                       `1` | Enable/disable all sApi logging. |
+| `SAPI_LOG_ACCESS_ENABLED` |                                       `1` | Enable/disable access log entries. |
+| `SAPI_LOG_EXCLUDE_PATHS` |                                 _(empty)_ | Comma-separated paths to skip from access logging (e.g. `/rest/health`). |
+| `SAPI_LOG_BODY_ON_ERROR` |                                       `1` | Log request body for `4xx/5xx`. |
+| `SAPI_LOG_MAX_BODY_BYTES` |                                    `4096` | Max request body bytes to log. |
+| `SAPI_LOG_AUDIT_ENABLED` |                                       `1` | Enable/disable audit events logging. |
+| `SAPI_AUDIT_EXCLUDE_EVENTS` |                                 _(empty)_ | Comma-separated event patterns to skip (supports `*` via `fnmatch`). |
+| `SAPI_AUDIT_MAX_CONTEXT_BYTES` |                                    `8192` | Max audit context size. |
+| `SAPI_REDACT_BODY_KEYS` | `password,token,refresh_token,jwt,secret` | Keys to redact in logged bodies/contexts. |
+| `APP_NAME` |                                     `evo` | Used as Monolog channel `name` for the `sapi` logger. |
+| `LOG_LEVEL` |                                   `debug` | Log level for the `sapi` logger. |
+| `LOG_DAILY_DAYS` |                                      `14` | Retention days for daily logs. |
+
+---
+
 ## Basic Concept
 
 `sApi` acts as an **API kernel**, not a full framework.
@@ -62,7 +90,7 @@ All API endpoints are defined via route providers.
 <?php
 declare(strict_types=1);
 
-define('MODX_API_MODE', true);
+define('EVO_API_MODE', true);
 define('IN_MANAGER_MODE', false);
 
 require_once dirname(__DIR__) . '/index.php';
@@ -75,8 +103,7 @@ $kernel = new Kernel($modx);
 $kernel->handle();
 ```
 
-The base API path is detected automatically from the controller location  
-(e.g. `/api`, `/rest`, etc.).
+The base API path is configured via `SAPI_BASE_PATH` (e.g. `api`, `rest`).
 
 ---
 
@@ -126,12 +153,12 @@ JWT payload example:
 
 ## Access Logging (JSON lines)
 
-sApi writes access logs for every API request under `base_path` (except `exclude_paths`) in JSON lines format using the standard Evolution/Laravel logger (Monolog daily).
+sApi writes access logs for every API request under `SAPI_BASE_PATH` (except `exclude_paths`) in JSON lines format using the standard Evolution/Laravel logger (Monolog daily).
 
 - Daily file: `core/storage/logs/sapi-YYYY-MM-DD.log`
 - Retention: `LOG_DAILY_DAYS` (default `14`)
 
-Configuration is file-only: `core/custom/config/seiger/settings/sApi.php` → `logging`.
+Configuration is via `.env` variables (see `SAPI_LOG_*` and `SAPI_REDACT_BODY_KEYS` above).
 
 Notes:
 - Response always includes `X-Request-Id`.
