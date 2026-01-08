@@ -4,48 +4,66 @@ use Illuminate\Http\Request;
 use Seiger\sApi\Auth\JwtService;
 use Seiger\sApi\Auth\UserProvider;
 use Seiger\sApi\Http\ApiResponse;
+use Seiger\sApi\Logging\AuditLogger;
+use Seiger\sApi\Logging\RequestContext;
 use Seiger\sApi\sApi;
 
 class TokenController
 {
     public function token(Request $request)
     {
-        $username = (string) $request->input('username', '');
-        if ($username === '') {
-            $raw = (string) $request->getContent();
-            if ($raw !== '') {
-                $decoded = json_decode($raw, true);
-                if (is_array($decoded) && isset($decoded['username'])) {
-                    $username = (string) $decoded['username'];
-                }
+        $decoded = null;
+        $raw = (string)$request->getContent();
+        if ($raw !== '') {
+            $maybe = json_decode($raw, true);
+            if (is_array($maybe)) {
+                $decoded = $maybe;
             }
+        }
+
+        $username = (string)$request->input('username', '');
+        if ($username === '' && is_array($decoded) && isset($decoded['username'])) {
+            $username = (string)$decoded['username'];
         }
         $username = trim($username);
 
         if ($username === '') {
-            return ApiResponse::error('Username are required.', 422, (object) []);
+            return ApiResponse::error('Username are required.', 422, (object)[]);
         }
 
-        $user = (new UserProvider())->findByUsername($username);
-        if (!$user || (int) $user->id < 1) {
-            return ApiResponse::error('User not found.', 404, (object) []);
+        $password = trim($request->input('password', 'password'));
+        $provider = new UserProvider;
+        $user = $provider->findByUsername($username);
+        if (!$user || (int)$user->id < 1) {
+            return ApiResponse::error('User not found.', 404, (object)[]);
         }
 
-        $allowedUsernames = sApi::config('allowed_usernames', []);
-        if (is_string($allowedUsernames)) {
-            $allowedUsernames = array_values(array_filter(array_map('trim', explode(',', $allowedUsernames))));
+        if (!$provider->checkPassword($user, $password)) {
+            return ApiResponse::error('Invalid credentials.', 401, (object)[]);
         }
 
-        if (!is_array($allowedUsernames) || $allowedUsernames === [] || !in_array($username, $allowedUsernames, true)) {
-            return ApiResponse::error('Access denied.', 403, (object) []);
+        $allowedUserRoles = sApi::config('allowed_user_roles', []);
+        if (!is_array($allowedUserRoles) || $allowedUserRoles === [] || !in_array($user->attributes->role, $allowedUserRoles, true)) {
+            return ApiResponse::error('Access denied.', 403, (object)[]);
         }
 
         try {
-            $token = (new JwtService())->issue([
+            $token = (new JwtService)->issue([
                 'sub' => $username,
             ]);
         } catch (\Throwable $e) {
-            return ApiResponse::error($e->getMessage(), 500, (object) []);
+            return ApiResponse::error($e->getMessage(), 500, (object)[]);
+        }
+
+        try {
+            RequestContext::set('user_id', (int)$user->id);
+            RequestContext::set('sub', $username);
+
+            app(AuditLogger::class)->event('token.issued', [
+                'username' => $username,
+            ], 'notice');
+        } catch (\Throwable) {
+            // audit logging must never break the request
         }
 
         return ApiResponse::success(['token' => $token], '', 200);

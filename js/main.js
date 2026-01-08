@@ -1,0 +1,74 @@
+window.sApi = window.sApi || {};
+
+/**
+ * Sidebar pin toggle (click-only, no hover).
+ */
+window.sApi.sPinner = function sPinner(key) {
+    return {
+        open: false,
+
+        init() {
+            const v = localStorage.getItem(key);
+            this.open = (v === 'true' || v === '1');
+        },
+
+        toggle() {
+            this.open = !this.open;
+            localStorage.setItem(key, this.open ? '1' : '0');
+        },
+    };
+};
+
+/**
+ * Makes a Fetch API call with robust error handling.
+ *
+ * @param {string} url - The endpoint URL.
+ * @param {FormData|object|null} form - The form data or null.
+ * @param {string} [method='POST'] - HTTP method.
+ * @param {string} [type='json'] - Response type: json, text, blob, formData, arrayBuffer.
+ * @returns {Promise<any|null>} - Parsed response or null on failure.
+ */
+window.sApi.callApi = async function callApi(url, form = null, method = 'POST', type = 'json', headers = {}) {
+    try {
+        const finalHeaders = {
+            'X-Requested-With': 'XMLHttpRequest',
+            ...headers
+        };
+
+        let body = form;
+
+        if (form instanceof FormData && ['DELETE', 'PUT'].includes(method.toUpperCase())) {
+            const jsonObject = {};
+            for (const [key, value] of form.entries()) {
+                jsonObject[key] = value;
+            }
+            body = JSON.stringify(jsonObject);
+            finalHeaders['Content-Type'] = 'application/json';
+        }
+
+        const response = await fetch(url, {
+            method,
+            cache: 'no-store',
+            headers: finalHeaders,
+            body
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) throw new Error('404, Not Found');
+            if (response.status === 500) throw new Error('500, Internal Server Error');
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+
+        switch (type) {
+            case 'text': return await response.text();
+            case 'json': return await response.json();
+            case 'blob': return await response.blob();
+            case 'formData': return await response.formData();
+            case 'arrayBuffer': return await response.arrayBuffer();
+            default: throw new Error('Unsupported response type');
+        }
+    } catch (error) {
+        console.error('Request failed:', error);
+        return null;
+    }
+}

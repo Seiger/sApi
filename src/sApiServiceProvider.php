@@ -2,6 +2,7 @@
 
 use EvolutionCMS\ServiceProvider;
 use Seiger\sApi\sApi;
+use Seiger\sApi\Logging\AuditLogger;
 
 /**
  * Class sApiServiceProvider
@@ -45,6 +46,23 @@ class sApiServiceProvider extends ServiceProvider
     {
         // Plugins
         $this->loadPluginsFrom(dirname(__DIR__) . '/plugins/');
+
+        // Logging channel (Monolog daily) for sApi timeline logs
+        $channels = $this->app['config']->get('logging.channels', []);
+        if (!isset($channels['sapi'])) {
+            $this->app['config']->set('logging.channels.sapi', [
+                'driver' => 'daily',
+                'name' => env('APP_NAME', 'evo'),
+                'path' => EVO_STORAGE_PATH . 'logs/sapi.log',
+                'level' => env('LOG_LEVEL', 'debug'),
+                'days' => env('LOG_DAILY_DAYS', 14),
+                'replace_placeholders' => true,
+            ]);
+        }
+
+        // Audit logger service
+        $this->app->singleton(AuditLogger::class);
+        $this->app->alias(AuditLogger::class, 'sapi.audit');
     }
 
     /**

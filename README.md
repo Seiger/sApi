@@ -124,6 +124,44 @@ JWT payload example:
 
 ---
 
+## Access Logging (JSON lines)
+
+sApi writes access logs for every API request under `base_path` (except `exclude_paths`) in JSON lines format using the standard Evolution/Laravel logger (Monolog daily).
+
+- Daily file: `core/storage/logs/sapi-YYYY-MM-DD.log`
+- Retention: `LOG_DAILY_DAYS` (default `14`)
+
+Configuration is file-only: `core/custom/config/seiger/settings/sApi.php` → `logging`.
+
+Notes:
+- Response always includes `X-Request-Id`.
+- `Authorization` / cookies are never written to access logs.
+- Request body is logged only for `4xx/5xx` (with redaction + size limit).
+
+---
+
+## Audit Logging (Business Events)
+
+Audit logs are explicit **business events** (e.g. `token.issued`, `orders.updated`) written as **JSON lines** into the same daily `sapi` log channel (timeline-friendly).
+
+- Daily file: `core/storage/logs/sapi-YYYY-MM-DD.log`
+- Retention: `LOG_DAILY_DAYS` (default `14`)
+
+Example:
+
+```php
+app(\Seiger\sApi\Logging\AuditLogger::class)->event('orders.updated', [
+    'order_id' => 123,
+    'status' => 'paid',
+], 'notice');
+```
+
+Notes:
+- `request_id`, `route`, `sub` can be auto-filled from the current request context (when available).
+- Never log JWT tokens or secrets in audit context (redaction is applied by key name).
+
+---
+
 ## Route Providers (Extensibility)
 
 Other packages (e.g. `sCommerce`, `sSeo`) can automatically register their API endpoints.
