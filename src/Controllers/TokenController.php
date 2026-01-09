@@ -27,7 +27,7 @@ class TokenController
         $username = trim($username);
 
         if ($username === '') {
-            return ApiResponse::error('Username are required.', 422, (object)[]);
+            return ApiResponse::error('Username is required.', 422, (object)[]);
         }
 
         $password = (string)$request->input('password', '');
@@ -50,7 +50,7 @@ class TokenController
             return ApiResponse::error('Invalid credentials.', 401, (object)[]);
         }
 
-        $rolesRaw = (string)env('SAPI_ALLOWED_USER_ROLES', '4');
+        $rolesRaw = (string)env('SAPI_ALLOWED_USER_ROLES', '1');
         $roles = array_values(array_filter(array_map('trim', explode(',', $rolesRaw))));
         $roles = array_values(array_filter(array_map('intval', $roles), static fn(int $v) => $v > 0));
         if ($roles === []) {

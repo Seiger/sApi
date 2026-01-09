@@ -53,7 +53,7 @@ Recommended location: `core/custom/.env` (EvolutionCMS loads it in `core/bootstr
 | `SAPI_JWT_TTL` |                                    `3600` | Token TTL in seconds. |
 | `SAPI_JWT_SCOPES` |                                       `*` | Default token scopes (comma-separated). |
 | `SAPI_JWT_ISS` |                                 _(empty)_ | Optional `iss` claim. |
-| `SAPI_ALLOWED_USER_ROLES` |                                       `4` | Allowed Evo manager roles for `/token` (comma-separated). |
+| `SAPI_ALLOWED_USER_ROLES` |                                       `1` | Allowed Evo manager roles for `/token` (comma-separated). |
 | `SAPI_LOGGING_ENABLED` |                                       `1` | Enable/disable all sApi logging. |
 | `SAPI_LOG_ACCESS_ENABLED` |                                       `1` | Enable/disable access log entries. |
 | `SAPI_LOG_EXCLUDE_PATHS` |                                 _(empty)_ | Comma-separated paths to skip from access logging (e.g. `/rest/health`). |
@@ -131,6 +131,14 @@ $router->group(['prefix' => 'v1'], function () use ($router) {
 Authorization: Bearer <jwt-token>
 ```
 
+### Issuing a Token
+
+To get a JWT, call the built-in token endpoint:
+
+- `POST /{SAPI_BASE_PATH}/{SAPI_VERSION}/token` (if `SAPI_VERSION` is empty → `/{SAPI_BASE_PATH}/token`)
+- Body (JSON): `{ "username": "manager_user", "password": "..." }`
+- Access is restricted by `SAPI_ALLOWED_USER_ROLES` (Evolution manager role ids).
+
 ### Middleware
 
 ```php
@@ -207,12 +215,12 @@ interface RouteProviderInterface
 ### Example Provider (in another package)
 
 ```php
-final class CommerceRouteProvider implements RouteProviderInterface
+final class OrdersRouteProvider implements RouteProviderInterface
 {
     public function register(Router $router): void
     {
-        $router->group(['prefix' => 'v1', 'middleware' => ['jwt:orders:read']], function () use ($router) {
-            $router->get('orders', OrdersController::class . '@index');
+        $router->group(['prefix' => 'orders', 'middleware' => ['jwt:orders:read']], function () use ($router) {
+            $router->get('', [OrdersController::class, 'index'])->name('index');
         });
     }
 }
@@ -225,14 +233,29 @@ final class CommerceRouteProvider implements RouteProviderInterface
   "extra": {
     "sapi": {
       "route_providers": [
-        "Seiger\\sCommerce\\Api\\Routes\\CommerceRouteProvider"
+        { "class": "Seiger\\sCommerce\\Api\\Routes\\OrdersRouteProvider", "endpoint": "orders" },
+        { "class": "Seiger\\sCommerce\\Api\\Routes\\LegacyOrdersRouteProvider", "endpoint": "orders", "version": "v0" }
       ]
     }
   }
 }
 ```
 
-`sApi` will automatically discover and register these providers.
+Rules:
+- `endpoint` is required.
+- `version` is optional; if omitted, `SAPI_VERSION` is used (can be empty for unversioned routes).
+- Cache key is `{version}/{endpoint}` or `{endpoint}` when version is empty.
+- Priority: `core/custom/composer.json` overrides vendor entries.
+- Route name prefix: `sApi.{endpoint}.{version}.…` (version is omitted when empty).
+- Providers must register routes **without** `SAPI_BASE_PATH` and **without** version in the URI (sApi applies them).
+
+### Cache
+
+Discovery is cached in `core/storage/cache/sapi_routes_map.php` and is rebuilt only when:
+- `core/composer.lock` changes (mtime/size)
+- `core/custom/composer.json` changes (mtime/size), if the file exists
+- `SAPI_VERSION` changes
+- `SAPI_BASE_PATH` changes
 
 ---
 

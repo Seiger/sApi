@@ -102,7 +102,7 @@ class MgrController
      */
     private function getConfiguredRoutes(): array
     {
-        $version = trim((string)env('SAPI_VERSION', ''), '/');
+        $version = trim((string)env('SAPI_VERSION', 'v1'), '/');
 
         return [
             [
