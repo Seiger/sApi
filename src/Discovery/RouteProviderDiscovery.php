@@ -231,7 +231,7 @@ final class RouteProviderDiscovery
             @mkdir($dir, 0775, true);
         }
 
-        $payload = "<?php return " . sApi::logPrepare($map) . ";\n";
+        $payload = "<?php return " . var_export($map, true) . ";\n";
         $tmp = $path . '.' . uniqid('tmp', true);
 
         if (@file_put_contents($tmp, $payload, LOCK_EX) !== false) {

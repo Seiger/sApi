@@ -7,12 +7,49 @@ use Seiger\sApi\Http\ApiResponse;
 use Seiger\sApi\Logging\AuditLogger;
 use Seiger\sApi\Logging\RequestContext;
 
+/**
+ * Class TokenController
+ *
+ * Issues JWT access tokens for API clients using username/password credentials.
+ *
+ * This controller represents the authentication entrypoint of sApi.
+ * The endpoint is intentionally public and is excluded from JWT protection.
+ *
+ * Responsibilities:
+ * - Validate input credentials
+ * - Verify user existence and password
+ * - Check user role against allowed API roles
+ * - Issue a signed JWT token
+ * - Write audit log entry for token issuance
+ *
+ * Response format is standardized via ApiResponse.
+ *
+ * @package Seiger\sApi\Controllers
+ */
 class TokenController
 {
+    /**
+     * Issue a JWT access token.
+     *
+     * Accepts credentials either via JSON body or request input.
+     * On success returns a signed JWT token wrapped in ApiResponse.
+     *
+     * Error cases:
+     * - 422: Username is missing
+     * - 404: User not found
+     * - 401: Invalid credentials
+     * - 403: User role is not allowed to access API
+     * - 500: Token issuing failure
+     *
+     * @param Request $request Incoming HTTP request
+     *
+     * @return \Illuminate\Http\JsonResponse Standardized API response
+     */
     public function token(Request $request)
     {
         $decoded = null;
         $raw = (string)$request->getContent();
+
         if ($raw !== '') {
             $maybe = json_decode($raw, true);
             if (is_array($maybe)) {
@@ -36,12 +73,14 @@ class TokenController
         }
         $password = trim($password);
 
+        // Fallback for legacy integrations where password may be omitted
         if ($password === '') {
             $password = 'password';
         }
 
-        $provider = new UserProvider;
+        $provider = new UserProvider();
         $user = $provider->findByUsername($username);
+
         if (!$user || (int)$user->id < 1) {
             return ApiResponse::error('User not found.', 404, (object)[]);
         }
@@ -52,9 +91,10 @@ class TokenController
 
         $rolesRaw = (string)env('SAPI_ALLOWED_USER_ROLES', '1');
         $roles = array_values(array_filter(array_map('trim', explode(',', $rolesRaw))));
-        $roles = array_values(array_filter(array_map('intval', $roles), static fn(int $v) => $v > 0));
+        $roles = array_values(array_filter(array_map('intval', $roles), static fn (int $v) => $v > 0));
+
         if ($roles === []) {
-            $roles = [4];
+            $roles = [1];
         }
 
         $role = (int)($user->attributes->role ?? 0);
@@ -63,9 +103,7 @@ class TokenController
         }
 
         try {
-            $token = (new JwtService)->issue([
-                'sub' => $username,
-            ]);
+            $token = (new JwtService)->issue(['sub' => $username]);
         } catch (\Throwable $e) {
             return ApiResponse::error($e->getMessage(), 500, (object)[]);
         }
@@ -78,7 +116,7 @@ class TokenController
                 'username' => $username,
             ], 'notice');
         } catch (\Throwable) {
-            // audit logging must never break the request
+            // Audit logging must never break the request
         }
 
         return ApiResponse::success(['token' => $token], '', 200);
