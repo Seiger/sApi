@@ -5,6 +5,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Http\Request;
 use Seiger\sApi\Http\ApiResponse;
+use Seiger\sApi\Logging\AccessLogger;
 use Seiger\sApi\Logging\RequestContext;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -20,7 +21,9 @@ final class JwtAuthMiddleware
             $existingScopes = is_array($existingScopes) ? array_values(array_map('strval', $existingScopes)) : $this->normalizeScopes($existingPayload['scopes'] ?? null);
 
             if ($requiredScopes !== [] && !$this->scopesAllow($existingScopes, $requiredScopes)) {
-                return ApiResponse::error('Forbidden.', 403, (object)[]);
+                $response = ApiResponse::error('Forbidden.', 403, (object)[]);
+                AccessLogger::log($request, $response);
+                return $response;
             }
 
             return $next($request);
@@ -28,41 +31,64 @@ final class JwtAuthMiddleware
 
         $token = $this->extractBearerToken((string)$request->headers->get('Authorization', ''));
         if ($token === null) {
-            return ApiResponse::error('Unauthorized.', 401, (object)[]);
+            $response = ApiResponse::error('Unauthorized.', 401, (object)[]);
+            AccessLogger::log($request, $response);
+            return $response;
         }
 
         $secret = (string)env('SAPI_JWT_SECRET', '');
         if ($secret === '') {
-            return ApiResponse::error('Server misconfigured.', 500, (object)[]);
+            $response = ApiResponse::error('Server misconfigured.', 500, (object)[]);
+            AccessLogger::log($request, $response);
+            return $response;
         }
 
         $payload = $this->decodeHs256($token, $secret);
         if (!is_array($payload)) {
-            return ApiResponse::error('Unauthorized.', 401, (object)[]);
+            $response = ApiResponse::error('Unauthorized.', 401, (object)[]);
+            AccessLogger::log($request, $response);
+            return $response;
         }
 
         if (!$this->validateIssuer($payload)) {
-            return ApiResponse::error('Unauthorized.', 401, (object)[]);
+            $response = ApiResponse::error('Unauthorized.', 401, (object)[]);
+            AccessLogger::log($request, $response);
+            return $response;
         }
 
         if (!$this->validateTimeClaims($payload)) {
-            return ApiResponse::error('Unauthorized.', 401, (object)[]);
+            $response = ApiResponse::error('Unauthorized.', 401, (object)[]);
+            AccessLogger::log($request, $response);
+            return $response;
         }
 
         $sub = isset($payload['sub']) ? trim((string)$payload['sub']) : '';
         $sub = $sub !== '' ? $sub : null;
 
         $scopes = $this->normalizeScopes($payload['scopes'] ?? null);
+        $userId = null;
+        if (array_key_exists('user_id', $payload) && is_numeric($payload['user_id'])) {
+            $userId = (int)$payload['user_id'];
+            if ($userId < 1) {
+                $userId = null;
+            }
+        }
 
         RequestContext::set('sub', $sub);
         RequestContext::set('scopes', $scopes);
+        if ($userId !== null) {
+            RequestContext::set('user_id', $userId);
+        }
 
         $request->attributes->set('sapi.jwt.payload', $payload);
         $request->attributes->set('sapi.jwt.sub', $sub);
         $request->attributes->set('sapi.jwt.scopes', $scopes);
+        $request->attributes->set('sapi.jwt.user_id', $userId);
 
         if ($requiredScopes !== [] && !$this->scopesAllow($scopes, $requiredScopes)) {
-            return ApiResponse::error('Forbidden.', 403, (object)[]);
+            $response = ApiResponse::error('Forbidden.', 403, (object)[]);
+            AccessLogger::log($request, $response);
+            return $response;
         }
 
         return $next($request);

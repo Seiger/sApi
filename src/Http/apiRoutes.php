@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use Seiger\sApi\Controllers\TokenController;
 use Seiger\sApi\Discovery\RouteProviderDiscovery;
 use Seiger\sApi\Http\ApiResponse;
-use Seiger\sApi\Http\Middleware\ApiAccessLogMiddleware;
 
 $basePath = trim((string)env('SAPI_BASE_PATH', 'api'), '/');
 $globalVersion = trim((string)env('SAPI_VERSION', 'v1'), '/');
@@ -12,7 +11,7 @@ $globalVersion = trim((string)env('SAPI_VERSION', 'v1'), '/');
 $routesMap = (new RouteProviderDiscovery())->loadRoutesMap();
 $routesMap = is_array($routesMap) ? $routesMap : [];
 
-$group = Route::middleware(['web', ApiAccessLogMiddleware::class]);
+$group = Route::middleware(['sapi.access', 'web']);
 if ($basePath !== '') {
     $group = $group->prefix($basePath);
 }

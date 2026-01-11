@@ -1,9 +1,10 @@
 <?php namespace Seiger\sApi;
 
 use EvolutionCMS\ServiceProvider;
-use Seiger\sApi\sApi;
 use Seiger\sApi\Logging\AuditLogger;
+use Seiger\sApi\Logging\AccessLogger;
 use Seiger\sApi\Http\Middleware\JwtAuthMiddleware;
+use Seiger\sApi\sApi;
 
 /**
  * Class sApiServiceProvider
@@ -21,6 +22,8 @@ class sApiServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        AccessLogger::installLifecycleHooks();
+
         // Merge configuration
         $this->mergeConfigFrom(dirname(__DIR__) . '/config/sApiCheck.php', 'cms.settings');
 

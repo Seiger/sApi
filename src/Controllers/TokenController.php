@@ -103,7 +103,10 @@ class TokenController
         }
 
         try {
-            $token = (new JwtService)->issue(['sub' => $username]);
+            $token = (new JwtService)->issue([
+                'sub' => $username,
+                'user_id' => (int)$user->id,
+            ]);
         } catch (\Throwable $e) {
             return ApiResponse::error($e->getMessage(), 500, (object)[]);
         }
