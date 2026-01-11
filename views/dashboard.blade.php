@@ -158,7 +158,7 @@
                                             @break
                                         @case('ERROR')
                                             <span class="px-2 py-1 rounded text-red-600 bg-red-50 text-xs font-medium">
-                                                {{$request['level']}}
+                                                {{ucfirst(strtolower($request['level']))}}
                                             </span>
                                             @break
                                         @case('CRITICAL')
@@ -168,12 +168,12 @@
                                             @break
                                         @case('ALERT')
                                             <span class="px-2 py-1 rounded text-fuchsia-700 bg-fuchsia-50 text-xs font-medium">
-                                                {{$request['level']}}
+                                                {{ucfirst(strtolower($request['level']))}}
                                             </span>
                                             @break
                                         @case('EMERGENCY')
                                             <span class="px-2 py-1 rounded text-violet-700 bg-violet-50 text-xs font-medium">
-                                                {{$request['level']}}
+                                                {{ucfirst(strtolower($request['level']))}}
                                             </span>
                                             @break
                                         @default

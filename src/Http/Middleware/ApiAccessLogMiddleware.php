@@ -41,7 +41,7 @@ class ApiAccessLogMiddleware
                 }
             }
 
-            $response = ApiResponse::error('Internal server error.', 500, (object) []);
+            $response = ApiResponse::error('Internal server error.', 500, (object)[]);
         }
 
         AccessLogger::rememberResponse($response);

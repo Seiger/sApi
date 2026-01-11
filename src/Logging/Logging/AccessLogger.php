@@ -413,7 +413,7 @@ final class AccessLogger
         $raw = (string)$request->getContent();
 
         if ($raw === '') {
-            return (object)[];
+            return '';
         }
 
         $rawTruncated = $raw;

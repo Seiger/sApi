@@ -148,7 +148,20 @@ class MgrController
 
             try {
                 while (($line = fgets($handle)) !== false) {
-                    if (!str_contains($line, '"type":"access"')) {
+                    $line = (string)$line;
+
+                    // Primary: access log entries emitted by AccessLogger::log()
+                    $isAccessLog = str_contains($line, '"type":"access"');
+
+                    // Fallback: error-shaped entries that still carry request context (e.g. "Unhandled API exception").
+                    // Those may appear when logging fails mid-flight or when exceptions are logged separately.
+                    $looksLikeRequestContext =
+                        str_contains($line, '"request_id"') &&
+                        str_contains($line, '"method"') &&
+                        str_contains($line, '"path"') &&
+                        str_contains($line, '"status"');
+
+                    if (!$isAccessLog && !$looksLikeRequestContext) {
                         continue;
                     }
 
@@ -349,10 +362,10 @@ class MgrController
         foreach ($this->resolveAccessLogFiles($dir) as $logFile) {
             if (count($items) >= $limit) break;
 
-            $rawLines = $this->tailFile($logFile, max(200, ($limit - count($items)) * 25));
+            $entries = $this->tailAccessLogEntries($logFile, max(250, ($limit - count($items)) * 40));
 
-            foreach ($rawLines as $line) {
-                $row = $this->parseAccessLogLine($line);
+            foreach ($entries as $entry) {
+                $row = $this->parseAccessLogLine($entry);
                 if (!$row) {
                     continue;
                 }
@@ -369,6 +382,49 @@ class MgrController
         }
 
         return $items;
+    }
+
+    /**
+     * Group last N lines into log entries (supports multiline exceptions/stacktraces).
+     *
+     * We read the file tail as lines (newest-first) and then stitch "continuation"
+     * lines back to the closest preceding "[YYYY-mm-dd HH:ii:ss]" header line.
+     *
+     * @param string $file
+     * @param int $lines
+     * @return array<int, string> Entries, newest first.
+     */
+    protected function tailAccessLogEntries(string $file, int $lines = 250): array
+    {
+        $rawLines = $this->tailFile($file, $lines);
+        if ($rawLines === []) {
+            return [];
+        }
+
+        $entries = [];
+        $pending = [];
+
+        foreach ($rawLines as $line) {
+            if ($this->looksLikeLogEntryHeader($line)) {
+                $entry = $line;
+                if ($pending !== []) {
+                    $entry .= "\n" . implode("\n", array_reverse($pending));
+                }
+
+                $entries[] = $entry;
+                $pending = [];
+                continue;
+            }
+
+            $pending[] = $line;
+        }
+
+        return $entries;
+    }
+
+    protected function looksLikeLogEntryHeader(string $line): bool
+    {
+        return preg_match('/^\\[\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}\\]/', $line) === 1;
     }
 
     /**
@@ -435,13 +491,16 @@ class MgrController
      */
     protected function parseAccessLogLine(string $line): ?array
     {
-        $line = trim($line);
-        $line = str_replace("\r", '', $line);
+        $entry = trim($line);
+        $entry = str_replace("\r", '', $entry);
+
+        $firstLine = explode("\n", $entry, 2)[0] ?? '';
+        $firstLine = trim($firstLine);
 
         // 1) Parse prefix: [dt] channel.LEVEL: message
         if (!preg_match(
             '/^\[(?<dt>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\]\s+(?<channel>.+?)\.(?<level>[A-Z]+):\s*(?<msg>.*)$/u',
-            $line,
+            $firstLine,
             $m
         )) {
             return null;
@@ -452,14 +511,8 @@ class MgrController
         $msg = $m['msg'];
 
         // 2) Extract JSON context (your JSON is after the message, we take from the first "{")
-        $jsonPos = strpos($msg, '{');
-        if ($jsonPos === false) {
-            return null;
-        }
-
-        $json = substr($msg, $jsonPos);
-        $context = json_decode($json, true);
-        if (!is_array($context)) {
+        $context = $this->extractLogContext($msg . "\n" . $entry);
+        if ($context === null) {
             return null;
         }
 
@@ -486,6 +539,131 @@ class MgrController
             'ua' => $context['ua'] ?? null,
             'route' => $context['route'] ?? null,
         ];
+    }
+
+    /**
+     * Best-effort extraction of the first JSON object from a log entry.
+     *
+     * @param string $text
+     * @return array<string, mixed>|null
+     */
+    protected function extractLogContext(string $text): ?array
+    {
+        $offset = 0;
+        $len = strlen($text);
+
+        while ($offset < $len) {
+            $pos = strpos($text, '{', $offset);
+            if ($pos === false) {
+                break;
+            }
+
+            $json = $this->extractFirstJsonObject($text, $pos);
+            if ($json === null) {
+                break;
+            }
+
+            $decoded = json_decode($json, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+
+            $offset = $pos + 1;
+        }
+
+        // Fallback for multiline/invalid JSON produced by some log formatters (inline stacktraces).
+        // We only need a few fields for the dashboard table, so parse them with regex.
+        return $this->extractKnownContextFields($text);
+    }
+
+    /**
+     * Extract a minimal set of context fields from a log entry without relying on valid JSON.
+     *
+     * @param string $text
+     * @return array<string, mixed>|null
+     */
+    protected function extractKnownContextFields(string $text): ?array
+    {
+        $out = [];
+
+        if (preg_match('~"request_id"\\s*:\\s*"([^"]+)"~', $text, $m)) {
+            $out['request_id'] = $m[1];
+        }
+        if (preg_match('~"method"\\s*:\\s*"([^"]+)"~', $text, $m)) {
+            $out['method'] = $m[1];
+        }
+        if (preg_match('~"path"\\s*:\\s*"([^"]+)"~', $text, $m)) {
+            $out['path'] = $m[1];
+        }
+        if (preg_match('~"status"\\s*:\\s*(\\d{3})~', $text, $m)) {
+            $out['status'] = (int)$m[1];
+        }
+        if (preg_match('~"duration_ms"\\s*:\\s*(\\d+)~', $text, $m)) {
+            $out['duration_ms'] = (int)$m[1];
+        }
+        if (preg_match('~"level"\\s*:\\s*"([A-Z]+)"~', $text, $m)) {
+            $out['level'] = $m[1];
+        }
+
+        // We consider this a valid context only if it has the fields required by the dashboard.
+        if (!isset($out['method'], $out['path'], $out['status'])) {
+            return null;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Extract a JSON object starting at $startPos by balancing braces, respecting strings/escapes.
+     */
+    protected function extractFirstJsonObject(string $text, int $startPos): ?string
+    {
+        $len = strlen($text);
+        if ($startPos < 0 || $startPos >= $len || $text[$startPos] !== '{') {
+            return null;
+        }
+
+        $depth = 0;
+        $inString = false;
+        $escape = false;
+
+        for ($i = $startPos; $i < $len; $i++) {
+            $ch = $text[$i];
+
+            if ($inString) {
+                if ($escape) {
+                    $escape = false;
+                    continue;
+                }
+                if ($ch === '\\') {
+                    $escape = true;
+                    continue;
+                }
+                if ($ch === '"') {
+                    $inString = false;
+                }
+                continue;
+            }
+
+            if ($ch === '"') {
+                $inString = true;
+                continue;
+            }
+
+            if ($ch === '{') {
+                $depth++;
+                continue;
+            }
+
+            if ($ch === '}') {
+                $depth--;
+                if ($depth === 0) {
+                    return substr($text, $startPos, $i - $startPos + 1);
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
