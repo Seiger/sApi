@@ -7,6 +7,11 @@ final class RequestContext
      */
     private static array $data = [];
 
+    public static function reset(): void
+    {
+        self::$data = [];
+    }
+
     public static function set(string $key, mixed $value): void
     {
         self::$data[$key] = $value;
