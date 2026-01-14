@@ -31,7 +31,7 @@ class sApiServiceProvider extends ServiceProvider
         $this->app->router->aliasMiddleware('sapi.jwt', JwtAuthMiddleware::class);
 
         // Load migrations, translations, views
-        $this->loadMigrationsFrom(__DIR__ . '/Database/Migrations');
+        $this->loadMigrationsFrom(dirname(__DIR__) . '/database/migrations');
         $this->loadTranslationsFrom(dirname(__DIR__) . '/lang', 'sApi');
         $this->loadViewsFrom(dirname(__DIR__) . '/views', 'sApi');
 

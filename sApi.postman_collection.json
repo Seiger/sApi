@@ -1,0 +1,464 @@
+{
+	"info": {
+		"_postman_id": "1670638e-2752-4755-8062-40b30c1186a1",
+		"name": "sApi",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "1444548"
+	},
+	"item": [
+		{
+			"name": "Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Token request succeeded\", function () {\r",
+							"  pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const json = pm.response.json();\r",
+							"const token = json?.object?.token;\r",
+							"\r",
+							"pm.test(\"Token exists in response\", function () {\r",
+							"  pm.expect(token).to.be.a(\"string\").and.not.empty;\r",
+							"});\r",
+							"\r",
+							"// Save token for next requests\r",
+							"pm.collectionVariables.set(\"token\", token);\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"{{username}}\",\r\n    \"password\": \"{{password}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/token",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Orders",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Orders request is authorized\", function () {\r",
+							"  pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const json = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Orders response structure is valid\", function () {\r",
+							"    const json = pm.response.json();\r",
+							"\r",
+							"    pm.expect(json).to.be.an(\"object\");\r",
+							"    pm.expect(json.success).to.eql(true);\r",
+							"    pm.expect(json.message).to.be.a(\"string\");\r",
+							"    pm.expect(json.object).to.be.an(\"object\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/orders",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Order",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Orders request is authorized\", function () {\r",
+							"  pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const json = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Orders response structure is valid\", function () {\r",
+							"    const json = pm.response.json();\r",
+							"\r",
+							"    pm.expect(json).to.be.an(\"object\");\r",
+							"    pm.expect(json.success).to.eql(true);\r",
+							"    pm.expect(json.message).to.be.a(\"string\");\r",
+							"    pm.expect(json.object).to.be.an(\"object\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"num\": \"VT-100500\",\r\n  \"cost\": 1234.56,\r\n  \"delivery_cost\": 70,\r\n  \"weight\": 1.2,\r\n  \"status\": 6,\r\n  \"delivery\": \"pickup\",\r\n  \"payment\": \"cash\",\r\n  \"loaded\": 1,\r\n  \"ttn\": \"20400000000000\",\r\n  \"comment\": \"Updated from ERP\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/orders/1",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"orders",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Order Address",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Orders request is authorized\", function () {\r",
+							"  pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const json = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Orders response structure is valid\", function () {\r",
+							"    const json = pm.response.json();\r",
+							"\r",
+							"    pm.expect(json).to.be.an(\"object\");\r",
+							"    pm.expect(json.success).to.eql(true);\r",
+							"    pm.expect(json.message).to.be.a(\"string\");\r",
+							"    pm.expect(json.object).to.be.an(\"object\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"addressData\": {\r\n        \"city\": \"Харків\",\r\n        \"room\": 45\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/orders/1",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"orders",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Order Products",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Orders request is authorized\", function () {\r",
+							"  pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const json = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Orders response structure is valid\", function () {\r",
+							"    const json = pm.response.json();\r",
+							"\r",
+							"    pm.expect(json).to.be.an(\"object\");\r",
+							"    pm.expect(json.success).to.eql(true);\r",
+							"    pm.expect(json.message).to.be.a(\"string\");\r",
+							"    pm.expect(json.object).to.be.an(\"object\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"Items\": [\r\n        {\r\n            \"uuid\":\"095c8d0f-b7c2-11eb-84ff-0050569ee4d0\",\r\n            \"itemCount\": 1,\r\n            \"itemPrice\": 2344.88,\r\n            \"itemWeight\": 20.0,\r\n            \"itemOption\": {\r\n                \"color\": \"зелений\",\r\n                \"size\": 18\r\n            }\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/orders/1",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"orders",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Order Statuses",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Orders request is authorized\", function () {\r",
+							"  pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const json = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Orders response structure is valid\", function () {\r",
+							"    const json = pm.response.json();\r",
+							"\r",
+							"    pm.expect(json).to.be.an(\"object\");\r",
+							"    pm.expect(json.success).to.eql(true);\r",
+							"    pm.expect(json.message).to.be.a(\"string\");\r",
+							"    pm.expect(json.object).to.be.an(\"object\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/statuses",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"statuses"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Payments",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Orders request is authorized\", function () {\r",
+							"  pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const json = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Orders response structure is valid\", function () {\r",
+							"    const json = pm.response.json();\r",
+							"\r",
+							"    pm.expect(json).to.be.an(\"object\");\r",
+							"    pm.expect(json.success).to.eql(true);\r",
+							"    pm.expect(json.message).to.be.a(\"string\");\r",
+							"    pm.expect(json.object).to.be.an(\"object\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/payments?active=1",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"payments"
+					],
+					"query": [
+						{
+							"key": "active",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": ""
+		},
+		{
+			"key": "token",
+			"value": ""
+		},
+		{
+			"key": "username",
+			"value": ""
+		},
+		{
+			"key": "password",
+			"value": ""
+		}
+	]
+}
