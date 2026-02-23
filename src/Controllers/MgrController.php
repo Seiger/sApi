@@ -43,7 +43,7 @@ class MgrController
             'tabName' => __('sApi::global.logs/timeline'),
         ];
 
-        return view('sApi::placeholder', array_merge($this->layout('Logs'), [
+        return view('sApi::placeholder', array_merge($this->layout($data), [
             'message' => 'Logs UI: not implemented.',
         ]));
     }
@@ -70,7 +70,7 @@ class MgrController
         }
         ksort($grouped);
 
-        return view('sApi::routes', array_merge($this->layout('Routes'), [
+        return view('sApi::routes', array_merge($this->layout($data), [
             'basePath' => $summary['basePath'],
             'summary' => $summary,
             'routes' => $routes,
@@ -80,14 +80,24 @@ class MgrController
 
     public function auth()
     {
-        return view('sApi::placeholder', array_merge($this->layout('Auth'), [
+        $data = [
+            'tabIcon' => 'tabler-lock',
+            'tabName' => 'Auth',
+        ];
+
+        return view('sApi::placeholder', array_merge($this->layout($data), [
             'message' => 'Auth UI: not implemented.',
         ]));
     }
 
     public function providers()
     {
-        return view('sApi::placeholder', array_merge($this->layout('Providers'), [
+        $data = [
+            'tabIcon' => 'tabler-plug-connected',
+            'tabName' => 'Providers',
+        ];
+
+        return view('sApi::placeholder', array_merge($this->layout($data), [
             'message' => 'Auto-discovery providers: not implemented.',
         ]));
     }
