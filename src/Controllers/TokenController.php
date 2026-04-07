@@ -97,7 +97,7 @@ class TokenController
             $roles = [1];
         }
 
-        $role = (int)($user->attributes->role ?? 0);
+        $role = intval($user->attributes?->role ?? 0);
         if (!in_array($role, $roles, true)) {
             return ApiResponse::error('Access denied.', 403, (object)[]);
         }

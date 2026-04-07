@@ -73,11 +73,15 @@ class UserProvider
             return false;
         }
 
-        return match ($hashType) {
-            'phpass' => function_exists('login') && (bool)\login((string)$user->username, $password, $hash),
-            'md5' => function_exists('loginMD5') && (bool)\loginMD5($user->getKey(), $password, $hash, (string)$user->username),
-            'v1' => function_exists('loginV1') && (bool)\loginV1($user->getKey(), $password, $hash, (string)$user->username),
-            default => false,
-        };
+        try {
+            return match ($hashType) {
+                'phpass' => function_exists('login') && (bool)\login((string)$user->username, $password, $hash),
+                'md5' => function_exists('loginMD5') && (bool)\loginMD5($user->getKey(), $password, $hash, (string)$user->username),
+                'v1' => function_exists('loginV1') && (bool)\loginV1($user->getKey(), $password, $hash, (string)$user->username),
+                default => false,
+            };
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

@@ -28,7 +28,11 @@ class ApiAccessLogMiddleware
                 'method' => strtoupper($request->getMethod()),
                 'path' => $request->getPathInfo(),
                 'status' => $status,
-                'exception' => $exception,
+                'exception_class' => $exception::class,
+                'exception_message' => $exception->getMessage(),
+                'exception_file' => $exception->getFile(),
+                'exception_line' => $exception->getLine(),
+                'exception_trace' => $exception->getTraceAsString(),
             ];
 
             try {

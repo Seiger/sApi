@@ -3,6 +3,7 @@
 use EvolutionCMS\ServiceProvider;
 use Seiger\sApi\Logging\AuditLogger;
 use Seiger\sApi\Logging\AccessLogger;
+use Seiger\sApi\Http\Middleware\ApiAccessLogMiddleware;
 use Seiger\sApi\Http\Middleware\JwtAuthMiddleware;
 use Seiger\sApi\sApi;
 
@@ -28,6 +29,7 @@ class sApiServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(dirname(__DIR__) . '/config/sApiCheck.php', 'cms.settings');
 
         // Route middleware aliases
+        $this->app->router->aliasMiddleware('sapi.access', ApiAccessLogMiddleware::class);
         $this->app->router->aliasMiddleware('sapi.jwt', JwtAuthMiddleware::class);
 
         // Load migrations, translations, views
