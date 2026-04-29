@@ -32,7 +32,7 @@ class TokenController
      * Issue a JWT access token.
      *
      * Accepts credentials either via JSON body or request input.
-     * On success returns a signed JWT token wrapped in ApiResponse.
+     * On success returns a signed JWT token payload in a standard data envelope.
      *
      * Error cases:
      * - 422: Username is missing
@@ -122,6 +122,10 @@ class TokenController
             // Audit logging must never break the request
         }
 
-        return ApiResponse::success(['token' => $token], '', 200);
+        return ApiResponse::success([
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'expires_in' => (int)env('SAPI_JWT_TTL', 3600),
+        ], '', 200);
     }
 }

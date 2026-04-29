@@ -1,30 +1,51 @@
 <?php namespace Seiger\sApi\Http;
 
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 final class ApiResponse
 {
-    public static function success(object|array $object = [], string $message = '', int $httpCode = 200): JsonResponse
+    public static function success(object|array $data = [], string $message = '', int $httpCode = 200): JsonResponse
     {
-        return self::json(true, $message, $object, $httpCode);
-    }
-
-    public static function error(string $message, int $httpCode, object|array $object = []): JsonResponse
-    {
-        return self::json(false, $message, $object, $httpCode);
-    }
-
-    private static function json(bool $success, string $message, object|array $object, int $httpCode): JsonResponse
-    {
-        if (is_array($object) && $object === []) {
-            $object = (object) [];
+        if (is_array($data) && $data === []) {
+            $data = (object) [];
         }
 
-        return response()->json([
-            'success' => $success,
-            'message' => $message,
-            'object' => $object,
-            'code' => $httpCode,
-        ], $httpCode);
+        $payload = ['data' => $data];
+        if ($message !== '') {
+            $payload['message'] = $message;
+        }
+
+        return response()->json($payload, $httpCode);
+    }
+
+    public static function error(string $detail, int $httpCode, object|array $extensions = [], ?string $title = null, ?string $type = null): JsonResponse
+    {
+        $payload = [
+            'type' => $type ?: self::problemType($httpCode),
+            'title' => $title ?: (Response::$statusTexts[$httpCode] ?? 'Error'),
+            'status' => $httpCode,
+            'detail' => $detail,
+        ];
+
+        if (is_object($extensions)) {
+            $extensions = (array)$extensions;
+        }
+        if (is_array($extensions)) {
+            foreach ($extensions as $key => $value) {
+                if (!in_array($key, ['type', 'title', 'status', 'detail'], true)) {
+                    $payload[$key] = $value;
+                }
+            }
+        }
+
+        return response()
+            ->json($payload, $httpCode)
+            ->header('Content-Type', 'application/problem+json');
+    }
+
+    private static function problemType(int $httpCode): string
+    {
+        return 'about:blank';
     }
 }

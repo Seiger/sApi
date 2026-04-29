@@ -21,6 +21,7 @@ Business logic, CRUD scaffolding, GraphQL, and API documentation are intentional
 - ✅ Middleware with scope-based authorization
 - ✅ JSON-only responses (no XML, no GraphQL)
 - ✅ Automatic discovery of API routes from other packages
+- ✅ OpenAPI-friendly response conventions
 - ✅ Designed for Evolution CMS ecosystem
 
 ---
@@ -48,7 +49,7 @@ Recommended location: `core/custom/.env` (EvolutionCMS loads it in `core/bootstr
 | Variable |                                   Default | Description |
 |---|------------------------------------------:|---|
 | `SAPI_BASE_PATH` |                                     `api` | Base prefix for all sApi routes (e.g. `rest` → `/rest/token`). |
-| `SAPI_VERSION` |                                      `v1` | Optional API version prefix (e.g. `v1` → `/rest/v1/token`). Leave empty to use unversioned routes. |
+| `SAPI_VERSION` |                                      `v1` | Optional API version prefix (e.g. `v1` → `/api/v1/token`). Leave empty to use unversioned routes. |
 | `SAPI_JWT_SECRET` |                                 _(empty)_ | HS256 secret used to sign/verify JWTs. **Required** to issue tokens. |
 | `SAPI_JWT_TTL` |                                    `3600` | Token TTL in seconds. |
 | `SAPI_JWT_SCOPES` |                                       `*` | Default token scopes (comma-separated). |
@@ -138,6 +139,18 @@ To get a JWT, call the built-in token endpoint:
 - `POST /{SAPI_BASE_PATH}/{SAPI_VERSION}/token` (if `SAPI_VERSION` is empty → `/{SAPI_BASE_PATH}/token`)
 - Body (JSON): `{ "username": "manager_user", "password": "..." }`
 - Access is restricted by `SAPI_ALLOWED_USER_ROLES` (Evolution manager role ids).
+
+Success response:
+
+```json
+{
+  "data": {
+    "access_token": "....",
+    "token_type": "Bearer",
+    "expires_in": 3600
+  }
+}
+```
 
 ### Middleware
 
@@ -259,34 +272,74 @@ Discovery is cached in `core/storage/cache/sapi_routes_map.php` and is rebuilt o
 
 ---
 
-## JSON Response Format
+## Response Conventions
 
-All responses are JSON.
+`sApi` keeps responses intentionally simple and OpenAPI-friendly.
 
-### Success
+### Success responses
+
+Successful responses use a top-level `data` member.
+
 ```json
 {
-  "ok": true,
   "data": {}
 }
 ```
 
-### Error
+For named collections:
+
 ```json
 {
-  "ok": false,
-  "error": {
-    "code": "unauthorized",
-    "message": "Invalid token"
+  "data": {
+    "categories": [
+      {
+        "id": 1,
+        "title": "News",
+        "alias": "news"
+      }
+    ]
   }
 }
 ```
+
+An optional `message` field may be included when it adds useful human context.
+
+### Error responses
+
+Error responses use `application/problem+json` and follow RFC 9457:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Invalid token."
+}
+```
+
+Validation-style extensions may be added as extra members, for example `errors`.
+
+### Design rules
+
+- use `snake_case` JSON keys
+- prefer `data` over generic wrappers such as `object`
+- do not duplicate the HTTP status code in the body by default
+- prefer standard fields like `access_token`, `token_type`, `expires_in`
+- keep business payloads inside `data`
+
+See also: [`docs/response-conventions.md`](docs/response-conventions.md)
 
 ---
 
 ## OpenAPI / Swagger
 
-`sApi` is designed to be compatible with **OpenAPI 3.2.0**.
+`sApi` is designed to be compatible with **OpenAPI 3.1**.
+
+Recommended standards around the core:
+
+- **OpenAPI 3.1** for contract description
+- **RFC 9457** for error responses (`application/problem+json`)
+- familiar **OAuth 2 token response fields** for access tokens
 
 Documentation generation and Swagger UI **are not included in the core**  
 and will be provided via a separate module.
@@ -308,7 +361,7 @@ See the `LICENSE` file for details.
 
 - JWT refresh tokens
 - Rate limiting middleware
-- OpenAPI 3.2 documentation module
+- OpenAPI documentation module
 - CLI helpers for API debugging
 - Request validation helpers
 
