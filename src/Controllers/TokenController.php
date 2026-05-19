@@ -49,6 +49,9 @@ class TokenController
     {
         $decoded = null;
         $raw = (string)$request->getContent();
+        if (str_starts_with($raw, "\xEF\xBB\xBF")) {
+            $raw = substr($raw, 3);
+        }
 
         if ($raw !== '') {
             $maybe = json_decode($raw, true);
