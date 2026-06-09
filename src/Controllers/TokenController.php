@@ -6,6 +6,7 @@ use Seiger\sApi\Auth\UserProvider;
 use Seiger\sApi\Http\ApiResponse;
 use Seiger\sApi\Logging\AuditLogger;
 use Seiger\sApi\Logging\RequestContext;
+use Seiger\sApi\Support\RequestPayload;
 
 /**
  * Class TokenController
@@ -31,7 +32,9 @@ class TokenController
     /**
      * Issue a JWT access token.
      *
-     * Accepts credentials either via JSON body or request input.
+     * Accepts credentials either via JSON body or request input. Raw JSON is
+     * normalized before validation so clients that accidentally prepend BOM or
+     * other invisible edge bytes still pass a readable credentials payload.
      * On success returns a signed JWT token payload in a standard data envelope.
      *
      * Error cases:
@@ -47,18 +50,7 @@ class TokenController
      */
     public function token(Request $request)
     {
-        $decoded = null;
-        $raw = (string)$request->getContent();
-        if (str_starts_with($raw, "\xEF\xBB\xBF")) {
-            $raw = substr($raw, 3);
-        }
-
-        if ($raw !== '') {
-            $maybe = json_decode($raw, true);
-            if (is_array($maybe)) {
-                $decoded = $maybe;
-            }
-        }
+        $decoded = RequestPayload::array($request);
 
         $username = (string)$request->input('username', '');
         if ($username === '' && is_array($decoded) && isset($decoded['username'])) {

@@ -5,13 +5,23 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class ApiResponse
 {
-    public static function success(object|array $data = [], string $message = '', int $httpCode = 200): JsonResponse
+    public static function success(object|array $data = [], string $message = '', int $httpCode = 200, object|array $meta = []): JsonResponse
     {
-        if (is_array($data) && $data === []) {
+        if (is_object($meta)) {
+            $meta = (array)$meta;
+        }
+
+        if (is_array($data) && $data === [] && $meta === []) {
             $data = (object) [];
         }
 
         $payload = ['data' => $data];
+        foreach ($meta as $key => $value) {
+            if (!in_array($key, ['data', 'message'], true)) {
+                $payload[$key] = $value;
+            }
+        }
+
         if ($message !== '') {
             $payload['message'] = $message;
         }

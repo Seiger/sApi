@@ -5,6 +5,7 @@ use Firebase\JWT\Key;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Seiger\sApi\Support\RequestPayload;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -407,10 +408,24 @@ final class AccessLogger
         return $token !== '' ? $token : null;
     }
 
+    /**
+     * Prepare the request body value stored in the access log.
+     *
+     * API clients can send valid JSON with invisible leading bytes, so logging
+     * uses the same body cleanup as controllers before truncating and redacting
+     * sensitive keys. JSON payloads are returned as arrays when decoding still
+     * succeeds; other content is stored as a bounded string sample.
+     *
+     * @param Request $request Request currently being logged.
+     * @param int $maxBodyBytes Maximum raw body bytes to keep before truncation.
+     * @param array<int, string> $redactKeys Payload keys that must be hidden in logs.
+     *
+     * @return array<string, mixed>|string Sanitized body value for log context.
+     */
     private static function safeRequestBody(Request $request, int $maxBodyBytes, array $redactKeys): array|string
     {
         $contentType = strtolower((string)$request->headers->get('Content-Type', ''));
-        $raw = (string)$request->getContent();
+        $raw = RequestPayload::clean((string)$request->getContent());
 
         if ($raw === '') {
             return '';
