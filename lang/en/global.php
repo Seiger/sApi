@@ -1,6 +1,7 @@
 <?php return [
     'title' => 'API Hub Manager',
-    'permission_access' => 'Access sTask Interface',
+    'permission_access' => 'Access sApi Interface',
+    'permission_api_access' => 'Access sApi API requests',
     'dashboard' => 'Dashboard',
     'routes' => 'Routes',
     'logs/timeline' => 'Logs / Timeline',

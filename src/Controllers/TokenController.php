@@ -1,6 +1,7 @@
 <?php namespace Seiger\sApi\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Seiger\sApi\Auth\JwtService;
 use Seiger\sApi\Auth\UserProvider;
 use Seiger\sApi\Http\ApiResponse;
@@ -19,7 +20,7 @@ use Seiger\sApi\Support\RequestPayload;
  * Responsibilities:
  * - Validate input credentials
  * - Verify user existence and password
- * - Check user role against allowed API roles
+ * - Check API access permission
  * - Issue a signed JWT token
  * - Write audit log entry for token issuance
  *
@@ -41,7 +42,7 @@ class TokenController
      * - 422: Username is missing
      * - 404: User not found
      * - 401: Invalid credentials
-     * - 403: User role is not allowed to access API
+     * - 403: User is not allowed to access API
      * - 500: Token issuing failure
      *
      * @param Request $request Incoming HTTP request
@@ -84,16 +85,8 @@ class TokenController
             return ApiResponse::error('Invalid credentials.', 401, (object)[]);
         }
 
-        $rolesRaw = (string)env('SAPI_ALLOWED_USER_ROLES', '1');
-        $roles = array_values(array_filter(array_map('trim', explode(',', $rolesRaw))));
-        $roles = array_values(array_filter(array_map('intval', $roles), static fn (int $v) => $v > 0));
-
-        if ($roles === []) {
-            $roles = [1];
-        }
-
-        $role = intval($user->attributes?->role ?? 0);
-        if (!in_array($role, $roles, true)) {
+        $role = (int)($user->attributes?->role ?? 0);
+        if (!$this->hasApiAccess($role)) {
             return ApiResponse::error('Access denied.', 403, (object)[]);
         }
 
@@ -122,5 +115,17 @@ class TokenController
             'token_type' => 'Bearer',
             'expires_in' => (int)env('SAPI_JWT_TTL', 3600),
         ], '', 200);
+    }
+
+    protected function hasApiAccess(int $role): bool
+    {
+        if ($role < 1) {
+            return false;
+        }
+
+        return DB::table('role_permissions')
+            ->where('role_id', $role)
+            ->where('permission', 'sapi_access')
+            ->exists();
     }
 }

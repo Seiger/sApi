@@ -1,6 +1,7 @@
 <?php return [
     'title' => 'API Хаб Менеджер',
-    'permission_access' => 'Доступ до інтерфейсу sTask',
+    'permission_access' => 'Доступ до інтерфейсу sApi',
+    'permission_api_access' => 'Доступ до API-запитів sApi',
     'dashboard' => 'Панель',
     'routes' => 'Роути',
     'logs/timeline' => 'Логи / Таймлайн',

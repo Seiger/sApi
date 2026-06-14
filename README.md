@@ -54,7 +54,6 @@ Recommended location: `core/custom/.env` (EvolutionCMS loads it in `core/bootstr
 | `SAPI_JWT_TTL` |                                    `3600` | Token TTL in seconds. |
 | `SAPI_JWT_SCOPES` |                                       `*` | Default token scopes (comma-separated). |
 | `SAPI_JWT_ISS` |                                 _(empty)_ | Optional `iss` claim. |
-| `SAPI_ALLOWED_USER_ROLES` |                                       `1` | Allowed Evo manager roles for `/token` (comma-separated). |
 | `SAPI_LOGGING_ENABLED` |                                       `1` | Enable/disable all sApi logging. |
 | `SAPI_LOG_ACCESS_ENABLED` |                                       `1` | Enable/disable access log entries. |
 | `SAPI_LOG_EXCLUDE_PATHS` |                                 _(empty)_ | Comma-separated paths to skip from access logging (e.g. `/rest/health`). |
@@ -138,7 +137,7 @@ To get a JWT, call the built-in token endpoint:
 
 - `POST /{SAPI_BASE_PATH}/{SAPI_VERSION}/token` (if `SAPI_VERSION` is empty → `/{SAPI_BASE_PATH}/token`)
 - Body (JSON): `{ "username": "manager_user", "password": "..." }`
-- Access is restricted by `SAPI_ALLOWED_USER_ROLES` (Evolution manager role ids).
+- Access is restricted by the `sapi_access` role permission. The package migration creates the `ApiUser` role and grants this permission to it by default.
 
 Success response:
 
