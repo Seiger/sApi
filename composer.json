@@ -1,7 +1,7 @@
 {
   "name": "seiger/sapi",
   "license": "GPL-3.0",
-  "type": "EvolutionCMS-Module",
+  "type": "evolutioncms-tool",
   "description": "API tools package for Evolution CMS.",
   "keywords": [
     "evocms",

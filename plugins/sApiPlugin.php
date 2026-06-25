@@ -10,7 +10,7 @@
  * @since 1.0.0
  */
 Event::listen('evolution.OnManagerMenuPrerender', function($params) {
-    if (evo()->hasPermission('sapi')) {
+    if (evo()->hasPermission('sapi_manager')) {
         $menu['sapi'] = [
             'sapi',
             'tools',
