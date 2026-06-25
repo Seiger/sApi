@@ -7,7 +7,9 @@ class MgrController
 {
     public function __construct()
     {
-        if (!evo()->hasPermission('sapi')) {abort(403, 'Access denied');}
+        if (!evo()->hasPermission('sapi_manager')) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(403, 'Access denied');
+        }
     }
 
     public function dashboard()
