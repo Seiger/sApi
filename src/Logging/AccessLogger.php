@@ -425,7 +425,7 @@ final class AccessLogger
     private static function safeRequestBody(Request $request, int $maxBodyBytes, array $redactKeys): array|string
     {
         $contentType = strtolower((string)$request->headers->get('Content-Type', ''));
-        $raw = RequestPayload::clean((string)$request->getContent());
+        $raw = self::normalizeRawBodyLineBreaks(RequestPayload::clean((string)$request->getContent()));
 
         if ($raw === '') {
             return '';
@@ -455,6 +455,13 @@ final class AccessLogger
         }
 
         return $rawTruncated;
+    }
+
+    private static function normalizeRawBodyLineBreaks(string $raw): string
+    {
+        $raw = str_replace(["\r\n", "\r"], "\n", $raw);
+
+        return preg_replace("/\n{3,}/", "\n\n", $raw) ?? $raw;
     }
 
     private static function redactRawString(string $raw, array $redactKeys): string

@@ -2,13 +2,14 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class MgrController
 {
     public function __construct()
     {
         if (!evo()->hasPermission('sapi_manager')) {
-            throw new \Symfony\Component\HttpKernel\Exception\HttpException(403, 'Access denied');
+            throw new HttpException(403, 'Access denied');
         }
     }
 
