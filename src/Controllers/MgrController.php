@@ -366,7 +366,7 @@ class MgrController
      */
     protected function getLatestAccessRequests(int $limit = 10, string $query = ''): array
     {
-        $dir = evo()->storagePath() . 'logs';
+        $dir = EVO_STORAGE_PATH . 'logs';
         if (!is_dir($dir)) {
             return [];
         }
