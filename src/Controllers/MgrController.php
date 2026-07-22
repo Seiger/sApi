@@ -46,7 +46,7 @@ class MgrController
             'tabName' => __('sApi::global.logs/timeline'),
         ];
 
-        return view('sApi::placeholder', array_merge($this->layout($data), [
+        return view('sApi::logs', array_merge($this->layout($data), [
             'message' => 'Logs UI: not implemented.',
         ]));
     }
