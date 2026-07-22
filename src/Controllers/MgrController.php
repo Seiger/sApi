@@ -1,9 +1,17 @@
 <?php namespace Seiger\sApi\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Str;
+use Seiger\sApi\Discovery\RouteInventory;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+/**
+ * Serves the sApi manager dashboard and operational inspection pages.
+ *
+ * Route reporting reflects the fully bootstrapped Laravel router so package
+ * providers discovered through Composer appear alongside built-in endpoints.
+ */
 class MgrController
 {
     public function __construct()
@@ -111,21 +119,24 @@ class MgrController
     }
 
     /**
+     * Build route definitions from the live Laravel router.
+     *
+     * The inventory includes built-in and Composer-discovered provider routes,
+     * while leaving presentation-specific normalization to the existing view pipeline.
+     *
      * @return array<int, array<string, mixed>>
      */
     private function getConfiguredRoutes(): array
     {
+        $router = app('router');
+        if (!$router instanceof Router) {
+            return [];
+        }
+
+        $basePath = trim((string)env('SAPI_BASE_PATH', 'api'), '/');
         $version = trim((string)env('SAPI_VERSION', 'v1'), '/');
 
-        return [
-            [
-                'method' => 'post',
-                'path' => 'token',
-                'prefix' => $version,
-                'action' => [\Seiger\sApi\Controllers\TokenController::class, 'token'],
-                'name' => 'token',
-            ],
-        ];
+        return (new RouteInventory())->discover($router, $basePath, $version);
     }
 
     private function countRequestsToday(): int
@@ -336,6 +347,16 @@ class MgrController
         return false;
     }
 
+    /**
+     * Convert Laravel route actions into readable manager labels.
+     *
+     * Closure actions remain explicit instead of being presented as invokable classes.
+     * The notes array receives lightweight presentation hints for the routes table.
+     *
+     * @param mixed $action Laravel route action definition.
+     * @param array<int, string> $notes Notes appended for the manager table.
+     * @return string|null Normalized handler label when the action is supported.
+     */
     private function normalizeHandler(mixed $action, array &$notes): ?string
     {
         if (is_array($action) && count($action) === 2 && is_string($action[0]) && is_string($action[1])) {
@@ -343,6 +364,11 @@ class MgrController
         }
 
         if (is_string($action)) {
+            if ($action === 'Closure') {
+                $notes[] = 'closure';
+                return $action;
+            }
+
             if (str_contains($action, '@')) {
                 return $action;
             }
