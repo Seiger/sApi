@@ -1,5 +1,6 @@
 <?php return [
     'title' => 'API Hub Manager',
+    'permissions_group' => 'Seiger packages',
     'permission_access' => 'Access sApi Interface',
     'permission_api_access' => 'Access sApi API requests',
     'dashboard' => 'Dashboard',

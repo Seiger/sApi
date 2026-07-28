@@ -36,6 +36,7 @@ class sApiServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(dirname(__DIR__) . '/database/migrations');
         $this->loadTranslationsFrom(dirname(__DIR__) . '/lang', 'sApi');
         $this->loadViewsFrom(dirname(__DIR__) . '/views', 'sApi');
+        $this->registerManagerPermissionLexicon();
 
         // API routes
         $this->loadApiRoutes();
@@ -93,6 +94,25 @@ class sApiServiceProvider extends ServiceProvider
     {
         $this->app->router->middlewareGroup('mgr', config('app.middleware.mgr', []));
         include(__DIR__ . '/Http/mgrRoutes.php');
+    }
+
+    /**
+     * Bridge package translations into the legacy manager permission lexicon.
+     *
+     * @since 1.1.1
+     */
+    protected function registerManagerPermissionLexicon(): void
+    {
+        if (!defined('IN_MANAGER_MODE') || !IN_MANAGER_MODE) {
+            return;
+        }
+
+        $managerTheme = $this->app->make('ManagerTheme');
+        $groupLabel = __('sApi::global.permissions_group');
+
+        $managerTheme->setLexicon('seiger_packages', $groupLabel);
+        $managerTheme->setLexicon('sApi::global.permission_access', __('sApi::global.permission_access'));
+        $managerTheme->setLexicon('sApi::global.permission_api_access', __('sApi::global.permission_api_access'));
     }
 
     /**

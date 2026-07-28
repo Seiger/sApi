@@ -1,5 +1,6 @@
 <?php return [
     'title' => 'API Хаб Менеджер',
+    'permissions_group' => 'Пакеты Seiger',
     'permission_access' => 'Доступ к интерфейсу sApi',
     'permission_api_access' => 'Доступ к API-запросам sApi',
     'dashboard' => 'Панель',

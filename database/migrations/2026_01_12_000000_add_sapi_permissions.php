@@ -1,31 +1,37 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use EvolutionCMS\Models\Permissions;
-use EvolutionCMS\Models\PermissionsGroups;
 use EvolutionCMS\Models\RolePermissions;
 
 /**
  * Migration: sApi permissions.
  */
 return new class extends Migration {
+    /**
+     * PostgreSQL aborts the whole transaction after the first failed statement.
+     * This migration intentionally retries inserts after sequence repair and after
+     * duplicate-key races, so it must run without Laravel's transaction wrapper.
+     *
+     * @var bool
+     */
+    public $withinTransaction = false;
+
     public function up(): void
     {
+        if (!Schema::hasTable('permissions_groups') || !Schema::hasTable('permissions')) {
+            return;
+        }
+
         /*
         |--------------------------------------------------------------------------
         | Create sApi permission
         |--------------------------------------------------------------------------
         */
-        $sGroup = PermissionsGroups::firstOrCreate(
-            ['name' => 'sPackages'],
-            [
-                'name' => 'sPackages',
-                'lang_key' => 'sPackages',
-                'createdon' => time(),
-                'editedon' => time(),
-            ]
-        );
+        $groupId = $this->getOrCreateGroup();
 
         Permissions::updateOrCreate(
             ['key' => 'sapi_manager'],
@@ -33,9 +39,7 @@ return new class extends Migration {
                 'name' => 'Access sApi Interface',
                 'key' => 'sapi_manager',
                 'lang_key' => 'sApi::global.permission_access',
-                'group_id' => $sGroup->id,
-                'createdon' => time(),
-                'editedon' => time(),
+                'group_id' => $groupId,
             ]
         );
 
@@ -45,9 +49,7 @@ return new class extends Migration {
                 'name' => 'Access sApi API',
                 'key' => 'sapi_access',
                 'lang_key' => 'sApi::global.permission_api_access',
-                'group_id' => $sGroup->id,
-                'createdon' => time(),
-                'editedon' => time(),
+                'group_id' => $groupId,
             ]
         );
 
@@ -103,7 +105,87 @@ return new class extends Migration {
         | Remove sApi permission
         |--------------------------------------------------------------------------
         */
-        RolePermissions::whereIn('permission', ['sapi', 'sapi_manager', 'sapi_access'])->delete();
-        Permissions::whereIn('key', ['sapi', 'sapi_manager', 'sapi_access'])->delete();
+        if (Schema::hasTable('role_permissions')) {
+            RolePermissions::whereIn('permission', ['sapi', 'sapi_manager', 'sapi_access'])->delete();
+        }
+
+        if (Schema::hasTable('permissions')) {
+            Permissions::whereIn('key', ['sapi', 'sapi_manager', 'sapi_access'])->delete();
+        }
+
+        if (Schema::hasTable('permissions_groups')) {
+            $group = DB::table('permissions_groups')->where('name', 'Seiger packages')->first();
+
+            if ($group) {
+                $hasPermissions = Schema::hasTable('permissions')
+                    && DB::table('permissions')->where('group_id', $group->id)->exists();
+
+                if (!$hasPermissions) {
+                    DB::table('permissions_groups')->where('id', $group->id)->delete();
+                }
+            }
+        }
+    }
+
+    /**
+     * Resolve the shared Seiger permission group or create it safely.
+     *
+     * @since 1.1.1
+     */
+    protected function getOrCreateGroup(): int
+    {
+        $group = DB::table('permissions_groups')
+            ->where('name', 'Seiger packages')
+            ->first();
+
+        if ($group) {
+            return (int) $group->id;
+        }
+
+        try {
+            return (int) DB::table('permissions_groups')->insertGetId([
+                'name' => 'Seiger packages',
+                'lang_key' => 'seiger_packages',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (QueryException $e) {
+            $this->fixPostgresSequence('permissions_groups');
+
+            try {
+                return (int) DB::table('permissions_groups')->insertGetId([
+                    'name' => 'Seiger packages',
+                    'lang_key' => 'seiger_packages',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (QueryException $e2) {
+                $group = DB::table('permissions_groups')
+                    ->where('name', 'Seiger packages')
+                    ->first();
+
+                if ($group) {
+                    return (int) $group->id;
+                }
+
+                throw $e2;
+            }
+        }
+    }
+
+    /**
+     * Repair a PostgreSQL sequence after imported or manually assigned IDs.
+     *
+     * @since 1.1.1
+     */
+    protected function fixPostgresSequence(string $table): void
+    {
+        try {
+            $fullTable = DB::getTablePrefix() . $table;
+            $maxId = DB::table($table)->max('id') ?? 0;
+            DB::statement("SELECT setval(pg_get_serial_sequence('{$fullTable}', 'id'), " . ($maxId + 1) . ", false)");
+        } catch (\Exception $e) {
+            // Ignore if the database is not PostgreSQL or sequence access is unavailable.
+        }
     }
 };
