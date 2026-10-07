@@ -128,6 +128,6 @@ class sApiServiceProvider extends ServiceProvider
             dirname(__DIR__) . '/images/logo.svg' => public_path('assets/site/sapi.svg'),
             dirname(__DIR__) . '/css/tailwind.min.css' => public_path('assets/site/sapi.min.css'),
             dirname(__DIR__) . '/js/main.js' => public_path('assets/site/sapi.js'),
-        ], 'sapi');
+        ], 'sApi');
     }
 }
