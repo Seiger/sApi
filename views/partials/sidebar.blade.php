@@ -1,6 +1,6 @@
 <aside class="w-64 shrink-0 border-r border-slate-200 bg-slate-900 text-slate-100">
     <div class="flex items-center gap-3 px-4 py-4 border-b border-slate-800">
-        <img src="{{\Seiger\sApi\sApi::asset('sapi.svg')}}" alt="sApi" class="h-9 w-9">
+        <img src="{{asset('site/sapi.svg')}}" alt="sApi" class="h-9 w-9">
         <div>
             <div class="text-sm font-semibold leading-5">sApi</div>
             <div class="text-xs text-slate-400">Manager</div>
