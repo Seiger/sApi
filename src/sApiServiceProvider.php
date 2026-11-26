@@ -5,6 +5,7 @@ use Seiger\sApi\Logging\AuditLogger;
 use Seiger\sApi\Logging\AccessLogger;
 use Seiger\sApi\Http\Middleware\ApiAccessLogMiddleware;
 use Seiger\sApi\Http\Middleware\JwtAuthMiddleware;
+use Seiger\sApi\Support\AssetPublisher;
 use Seiger\sApi\sApi;
 
 /**
@@ -123,11 +124,28 @@ class sApiServiceProvider extends ServiceProvider
      */
     protected function publishResources()
     {
-        $this->publishes([
+        $assets = $this->publicAssets();
+
+        $this->publishes($assets, 'sApi');
+
+        if (!$this->app->runningInConsole()) {
+            AssetPublisher::sync($assets);
+        }
+    }
+
+    /**
+     * Package files served from the public assets directory.
+     *
+     * @return array<string, string>
+     */
+    protected function publicAssets(): array
+    {
+        return [
             dirname(__DIR__) . '/images/seigerit.svg' => public_path('assets/site/seigerit.svg'),
             dirname(__DIR__) . '/images/logo.svg' => public_path('assets/site/sapi.svg'),
             dirname(__DIR__) . '/css/tailwind.min.css' => public_path('assets/site/sapi.min.css'),
             dirname(__DIR__) . '/js/main.js' => public_path('assets/site/sapi.js'),
-        ], 'sApi');
+            dirname(__DIR__) . '/js/tooltip.js' => public_path('assets/site/seigerit.tooltip.js'),
+        ];
     }
 }
