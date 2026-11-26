@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Str;
 use Seiger\sApi\Discovery\RouteInventory;
+use Seiger\sApi\Discovery\RouteProviderDiscovery;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
@@ -136,7 +137,14 @@ class MgrController
         $basePath = trim((string)env('SAPI_BASE_PATH', 'api'), '/');
         $version = trim((string)env('SAPI_VERSION', 'v1'), '/');
 
-        return (new RouteInventory())->discover($router, $basePath, $version);
+        $providerVersions = [];
+        foreach ((new RouteProviderDiscovery())->loadRoutesMap() as $key => $row) {
+            if ($key !== '_meta' && is_array($row)) {
+                $providerVersions[] = (string)($row['version'] ?? '');
+            }
+        }
+
+        return (new RouteInventory())->discover($router, $basePath, $version, $providerVersions);
     }
 
     private function countRequestsToday(): int

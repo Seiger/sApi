@@ -65,6 +65,23 @@ foreach (array_unique($matches[1]) as $asset) {
 }
 $assert(!str_contains($views, 'sApi::asset('), 'views do not call undefined sApi::asset()');
 
+// Every referenced package class must exist (a missing file broke the manager routes page).
+$srcFiles = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/src', FilesystemIterator::SKIP_DOTS));
+foreach ($srcFiles as $file) {
+    if ($file->getExtension() !== 'php') {
+        continue;
+    }
+    $code = preg_replace('/\bnamespace\s+[^;]+;/', '', (string) file_get_contents($file->getPathname()));
+    preg_match_all('/Seiger\\\\sApi\\\\([A-Za-z0-9_\\\\]+)/', $code, $refs);
+    foreach (array_unique($refs[1]) as $ref) {
+        $classFile = $root . '/src/' . str_replace('\\', '/', $ref) . '.php';
+        if (is_dir(substr($classFile, 0, -4))) {
+            continue; // namespace reference, e.g. @package
+        }
+        $assert(is_file($classFile), "class Seiger\\sApi\\{$ref} referenced in {$file->getFilename()} exists");
+    }
+}
+
 $cleanup = static function (string $path) use (&$cleanup): void {
     if (is_dir($path)) {
         foreach (scandir($path) ?: [] as $item) {
